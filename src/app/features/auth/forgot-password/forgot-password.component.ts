@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,6 +18,7 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -32,9 +33,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <!-- Header -->
         <div class="auth-header">
           <div class="logo-section">
-            <div class="logo-icon">
-              <mat-icon>lock_reset</mat-icon>
-            </div>
+            <div class="logo-icon">🔐</div>
             <h1>AuditSec</h1>
           </div>
           <p class="auth-subtitle">Mot de passe oublié</p>
@@ -77,19 +76,19 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-icon>email</mat-icon>
             </div>
             <mat-form-field appearance="outline" class="form-field">
-              <input
-                matInput
-                type="email"
-                formControlName="email"
+            <input 
+              matInput 
+              type="email" 
+              formControlName="email" 
                 placeholder="Votre adresse email"
-                autocomplete="email">
+              autocomplete="email">
               <mat-error *ngIf="emailForm.get('email')?.hasError('required')">
-                L'email est requis
-              </mat-error>
+              L'email est requis
+            </mat-error>
               <mat-error *ngIf="emailForm.get('email')?.hasError('email')">
-                Format d'email invalide
-              </mat-error>
-            </mat-form-field>
+              Format d'email invalide
+            </mat-error>
+          </mat-form-field>
           </div>
 
           <button
@@ -228,8 +227,8 @@ import { AuthService } from '../../../core/services/auth.service';
             </mat-form-field>
           </div>
 
-          <button
-            mat-raised-button
+          <button 
+            mat-raised-button 
             type="submit"
             class="login-button"
             [disabled]="passwordForm.invalid || isLoading">
@@ -256,7 +255,6 @@ import { AuthService } from '../../../core/services/auth.service';
             mat-button 
             routerLink="/login"
             class="back-button">
-            <mat-icon>arrow_back</mat-icon>
             Retour à la connexion
           </button>
           
@@ -336,14 +334,10 @@ import { AuthService } from '../../../core/services/auth.service';
     }
 
     .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
+      font-size: 2rem;
+      margin-right: 0.5rem;
+      animation: pulse 2s infinite;
+      background: transparent;
     }
 
     .logo-icon mat-icon {
@@ -539,7 +533,35 @@ import { AuthService } from '../../../core/services/auth.service';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: #718096;
+      color: #667eea;
+      background: transparent;
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+
+    .back-button:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .back-button mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .back-button:hover mat-icon {
+      transform: translateX(-4px);
     }
 
     .login-button {
@@ -882,13 +904,50 @@ import { AuthService } from '../../../core/services/auth.service';
     .resend-code-button .spinner {
       margin-right: 0.5rem;
     }
+
+    /* Custom SnackBar Styles - Green Background */
+    ::ng-deep .mat-mdc-snack-bar-container {
+      background: #10b981 !important;
+      color: #ffffff !important;
+      border: 2px solid #059669 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    ::ng-deep .mat-mdc-snack-bar-container .mdc-snackbar__surface {
+      background: #10b981 !important;
+      color: #ffffff !important;
+      border-radius: 12px !important;
+    }
+
+    ::ng-deep .mat-mdc-snack-bar-container .mdc-snackbar__label {
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      font-size: 1rem !important;
+    }
+
+    ::ng-deep .mat-mdc-snack-bar-container .mdc-snackbar__actions button {
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      border: 2px solid #ffffff !important;
+      border-radius: 8px !important;
+      padding: 8px 16px !important;
+      transition: all 0.3s ease !important;
+    }
+
+    ::ng-deep .mat-mdc-snack-bar-container .mdc-snackbar__actions button:hover {
+      background: #ffffff !important;
+      color: #10b981 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+    }
   `]
 })
 export class ForgotPasswordComponent implements OnInit, OnDestroy {
   emailForm: FormGroup;
   codeForm: FormGroup;
   passwordForm: FormGroup;
-  
+
   currentStep = 1;
   userEmail = '';
   showPassword = false;
@@ -896,7 +955,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   isLoading = false;
   isResending = false;
   errorMessage = '';
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -911,14 +970,14 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
 
     this.codeForm = this.fb.group({
       code: ['', [
-        Validators.required, 
+        Validators.required,
         Validators.pattern(/^\d{6}$/)
       ]]
     });
 
     this.passwordForm = this.fb.group({
       newPassword: ['', [
-        Validators.required, 
+        Validators.required,
         Validators.minLength(8)
       ]],
       confirmPassword: ['', [Validators.required]]
@@ -958,13 +1017,13 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
         error: (error: any) => {
           console.error('Forgot password error:', error);
           let errorMessage = 'Erreur lors de l\'envoi du code';
-          
+
           if (error.status === 404) {
             errorMessage = 'Email non trouvé dans notre système';
           } else if (error.status === 429) {
             errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard';
           }
-          
+
           this.errorMessage = errorMessage;
           this.snackBar.open(errorMessage, 'Fermer', {
             duration: 3000,
@@ -1004,13 +1063,13 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
         error: (error: any) => {
           console.error('Reset password error:', error);
           let errorMessage = 'Erreur lors de la réinitialisation';
-          
+
           if (error.status === 400) {
             errorMessage = 'Code invalide ou expiré';
           } else if (error.status === 404) {
             errorMessage = 'Email non trouvé';
           }
-          
+
           this.errorMessage = errorMessage;
           this.snackBar.open(errorMessage, 'Fermer', {
             duration: 3000,
@@ -1025,7 +1084,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   resendCode(): void {
     if (!this.isResending) {
       this.isResending = true;
-      
+
       this.authService.forgotPassword(this.userEmail).subscribe({
         next: () => {
           this.isResending = false;
@@ -1060,9 +1119,9 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   private passwordMatchValidator(group: any): {[key: string]: any} | null {
     const password = group.get('newPassword');
     const confirmPassword = group.get('confirmPassword');
-    
+
     if (!password || !confirmPassword) return null;
-    
+
     return password.value === confirmPassword.value ? null : { passwordMismatch: true };
   }
 }
