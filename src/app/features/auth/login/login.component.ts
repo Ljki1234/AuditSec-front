@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +20,7 @@ import { LoginRequest } from '../../../core/models/auth.models';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -43,6 +44,10 @@ import { LoginRequest } from '../../../core/models/auth.models';
 
       <!-- Main Login Card -->
       <div class="login-card">
+        <!-- Global loading overlay -->
+        <div *ngIf="isLoading" class="loading-overlay">
+          <mat-spinner diameter="48" color="accent"></mat-spinner>
+        </div>
         <!-- Header -->
         <div class="card-header">
           <div class="logo-container">
@@ -117,13 +122,24 @@ import { LoginRequest } from '../../../core/models/auth.models';
             </a>
           </div>
 
+          <!-- Inline Messages (moved above the submit button) -->
+          <div *ngIf="displayErrorMessage()" class="error-message">
+            <mat-icon>error</mat-icon>
+            <span>{{ displayErrorMessage() }}</span>
+          </div>
+
+          <div *ngIf="lockoutEndTime" class="lockout-message">
+            <mat-icon>lock</mat-icon>
+            <span>Compte temporairement verrouillé - Déverrouillage dans: {{ getLockoutTime() }}</span>
+          </div>
+
           <!-- Login Button -->
           <button
             mat-raised-button
             type="submit"
             class="login-button"
             [disabled]="loginForm.invalid || isLoading">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="spinner"></mat-spinner>
+            <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
             <span *ngIf="!isLoading">Se connecter</span>
           </button>
         </form>
@@ -207,6 +223,7 @@ import { LoginRequest } from '../../../core/models/auth.models';
             </mat-form-field>
           </div>
 
+
           <!-- Confirm Password Field -->
           <div class="input-group">
             <div class="input-icon">
@@ -240,6 +257,19 @@ import { LoginRequest } from '../../../core/models/auth.models';
           </div>
 
           <!-- Password Mismatch Error -->
+          <!-- Password Strength Indicator moved below confirm password -->
+          <div *ngIf="registerForm.get('password')?.value" class="password-strength">
+            Force du mot de passe:
+            <span [ngClass]="{
+              'weak': isPasswordWeak(),
+              'medium': isPasswordMedium(),
+              'strong': isPasswordStrong()
+            }">
+              {{ getPasswordStrength() }}
+            </span>
+          </div>
+
+          <!-- Password Mismatch Error -->
           <div *ngIf="registerForm.hasError('passwordMismatch')" class="error-message">
             <mat-icon>error</mat-icon>
             <span>Les mots de passe ne correspondent pas</span>
@@ -251,7 +281,7 @@ import { LoginRequest } from '../../../core/models/auth.models';
             type="submit"
             class="login-button"
             [disabled]="registerForm.invalid || isLoading">
-            <mat-spinner *ngIf="isLoading" diameter="20" class="spinner"></mat-spinner>
+            <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
             <span *ngIf="!isLoading">S'inscrire</span>
           </button>
         </form>
@@ -270,31 +300,6 @@ import { LoginRequest } from '../../../core/models/auth.models';
           {{ showRegisterForm ? 'Déjà un compte ? Se connecter' : 'Créer un nouveau compte' }}
         </button>
 
-        <!-- Error Messages -->
-        <div *ngIf="errorMessage" class="error-message">
-          <mat-icon>error</mat-icon>
-          <span>{{ errorMessage }}</span>
-        </div>
-
-        <!-- Lockout Warning -->
-        <div *ngIf="lockoutEndTime" class="lockout-message">
-          <mat-icon>lock</mat-icon>
-          <span>Compte temporairement verrouillé - Déverrouillage: {{ getLockoutTime() }}</span>
-        </div>
-
-        <!-- Remaining Attempts -->
-        <div *ngIf="remainingAttempts !== undefined && remainingAttempts < 5" class="attempts-message">
-          <mat-icon>warning</mat-icon>
-          <span>Tentatives restantes: {{ remainingAttempts }}</span>
-        </div>
-
-        <!-- Password Strength Indicator -->
-        <div *ngIf="registerForm.get('password')?.value" class="password-strength">
-          Force du mot de passe:
-          <span [ngClass]="{'weak': isPasswordWeak(), 'medium': isPasswordMedium(), 'strong': isPasswordStrong()}">
-            {{ getPasswordStrength() }}
-          </span>
-        </div>
       </div>
     </div>
   `,
@@ -388,6 +393,20 @@ import { LoginRequest } from '../../../core/models/auth.models';
       z-index: 2;
       border: 1px solid rgba(255, 255, 255, 0.2);
       animation: slideUp 0.8s ease-out;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.6);
+      z-index: 5;
+      border-radius: 20px;
     }
 
     @keyframes slideUp {
@@ -712,17 +731,10 @@ import { LoginRequest } from '../../../core/models/auth.models';
       color: #718096;
     }
 
-    .password-strength.weak {
-      color: #e53e3e;
-    }
-
-    .password-strength.medium {
-      color: #d69e2e;
-    }
-
-    .password-strength.strong {
-      color: #38a169;
-    }
+    /* Apply color to the value span according to strength */
+    .password-strength span.weak { color: #e53e3e; }
+    .password-strength span.medium { color: #d69e2e; }
+    .password-strength span.strong { color: #38a169; }
 
     /* Divider */
     .divider {
@@ -790,6 +802,12 @@ import { LoginRequest } from '../../../core/models/auth.models';
         color: #a0aec0;
       }
     }
+
+    /* Success snackbar style */
+    :host ::ng-deep .snackbar-success {
+      background: #38a169 !important; /* green-500 */
+      color: #ffffff !important;
+    }
   `]
 })
 export class LoginComponent implements OnInit, OnDestroy {
@@ -804,6 +822,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   lockoutEndTime?: string;
   showRegisterForm = false;
   private destroy$ = new Subject<void>();
+  private countdownIntervalId: any;
 
   constructor(
     private fb: FormBuilder,
@@ -836,7 +855,15 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.isLoading = state.isLoading;
         this.errorMessage = state.error || '';
         this.remainingAttempts = state.remainingAttempts;
+        const wasLocked = !!this.lockoutEndTime;
         this.lockoutEndTime = state.lockoutEndTime;
+
+        const isLocked = !!this.lockoutEndTime;
+        if (isLocked && !wasLocked) {
+          this.startCountdown();
+        } else if (!isLocked && wasLocked) {
+          this.stopCountdown();
+        }
 
         if (state.isAuthenticated) {
           this.router.navigate(['/tableau-de-bord']);
@@ -845,6 +872,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.countdownIntervalId) {
+      clearInterval(this.countdownIntervalId);
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -901,7 +931,8 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.snackBar.open('Inscription réussie!', 'Fermer', {
             duration: 3000,
             horizontalPosition: 'center',
-            verticalPosition: 'top'
+            verticalPosition: 'top',
+            panelClass: ['snackbar-success']
           });
           this.showRegisterForm = false;
           this.resetForm();
@@ -914,7 +945,8 @@ export class LoginComponent implements OnInit, OnDestroy {
             this.snackBar.open('Inscription réussie!', 'Fermer', {
               duration: 3000,
               horizontalPosition: 'center',
-              verticalPosition: 'top'
+              verticalPosition: 'top',
+              panelClass: ['snackbar-success']
             });
             this.showRegisterForm = false;
             this.resetForm();
@@ -948,7 +980,8 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.snackBar.open('Connexion réussie!', 'Fermer', {
             duration: 3000,
             horizontalPosition: 'center',
-            verticalPosition: 'top'
+            verticalPosition: 'top',
+            panelClass: ['snackbar-success']
           });
         },
         error: (error) => {
@@ -969,10 +1002,57 @@ export class LoginComponent implements OnInit, OnDestroy {
     const now = new Date();
     const diffMs = lockoutDate.getTime() - now.getTime();
 
-    if (diffMs <= 0) return 'Maintenant';
+    if (diffMs <= 0) return '0s';
 
-    const diffMins = Math.ceil(diffMs / (1000 * 60));
-    return `${diffMins} minute${diffMins > 1 ? 's' : ''}`;
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const minPart = minutes > 0 ? `${minutes} min` : '';
+    const secPart = seconds.toString().padStart(2, '0') + ' s';
+    return minPart ? `${minPart} ${secPart}` : secPart;
+  }
+
+  private startCountdown(): void {
+    this.stopCountdown();
+    this.countdownIntervalId = setInterval(() => {
+      if (this.lockoutEndTime) {
+        const ends = new Date(this.lockoutEndTime).getTime();
+        if (Date.now() >= ends) {
+          this.stopCountdown();
+          this.lockoutEndTime = undefined;
+        }
+      } else {
+        this.stopCountdown();
+      }
+    }, 1000);
+  }
+
+  private stopCountdown(): void {
+    if (this.countdownIntervalId) {
+      clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = null;
+    }
+  }
+
+  displayErrorMessage(): string {
+    // Si le compte est verrouillé, on n'affiche PAS le message d'identifiants
+    if (this.lockoutEndTime) {
+      return '';
+    }
+    if (!this.errorMessage) {
+      return '';
+    }
+    // Combiner message 401 avec tentatives restantes si disponible
+    if (this.remainingAttempts !== undefined && this.remainingAttempts < 5 && !this.lockoutEndTime) {
+      // Si l'erreur indique des identifiants invalides, personnaliser
+      const isInvalid = this.errorMessage.toLowerCase().includes('invalid') || this.errorMessage.toLowerCase().includes('identifiants');
+      if (isInvalid) {
+        return `Mot de passe incorrect, tentatives restantes: ${this.remainingAttempts}`;
+      }
+      // Autres erreurs non liées au verrouillage: ajouter les tentatives restantes si pertinentes
+      return `${this.errorMessage} — Tentatives restantes: ${this.remainingAttempts}`;
+    }
+    return this.errorMessage;
   }
 
   isPasswordWeak(): boolean {

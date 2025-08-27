@@ -47,6 +47,29 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Angular Material Snackbar global theming for success (solid, stylish green) */
+.mat-mdc-snack-bar-container.snackbar-success,
+.mat-mdc-snack-bar-container.snackbar-success .mdc-snackbar__surface {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%) !important; /* solid green gradient */
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 30px rgba(34, 197, 94, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Ensure the label text uses white and no transparency */
+.mat-mdc-snack-bar-container.snackbar-success .mdc-snackbar__label {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+/* Optional: style the action button (if used) */
+.mat-mdc-snack-bar-container.snackbar-success .mdc-button__label {
+  color: #f0fdf4 !important; /* very light green/white */
+  font-weight: 600;
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;

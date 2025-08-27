@@ -97,6 +97,23 @@ export class AuthService {
     );
   }
 
+  // Reset Password with Code
+  resetPasswordWithCode(email: string, code: string, newPassword: string): Observable<any> {
+    this.setLoading(true);
+    
+    return this.http.post(`${this.API_BASE_URL}/reset-password/code`, { 
+      email, 
+      code, 
+      newPassword 
+    }).pipe(
+      tap(() => this.setLoading(false)),
+      catchError(error => {
+        this.setLoading(false);
+        return throwError(() => error);
+      })
+    );
+  }
+
   // Reset Password
   resetPassword(token: string, newPassword: string): Observable<any> {
     this.setLoading(true);
@@ -183,21 +200,30 @@ export class AuthService {
 
   private handleAuthError(error: HttpErrorResponse): void {
     let errorMessage = 'Une erreur est survenue';
-    
-    if (error.error?.message) {
-      errorMessage = error.error.message;
+    const backendError = error?.error as any;
+
+    // Prefer backend-provided message fields
+    if (backendError?.error) {
+      errorMessage = backendError.error;
+    } else if (backendError?.message) {
+      errorMessage = backendError.message;
     } else if (error.status === 401) {
-      errorMessage = 'Identifiants invalides';
-    } else if (error.status === 403) {
+      errorMessage = 'Mot de passe incorrect';
+    } else if (error.status === 423) {
       errorMessage = 'Compte temporairement verrouillé';
     } else if (error.status === 429) {
-      errorMessage = 'Trop de tentatives échouées';
+      errorMessage = 'Trop de tentatives échouées depuis cette adresse IP';
     }
+
+    const remainingAttempts: number | undefined = backendError?.remainingAttempts;
+    const lockoutEndTime: string | undefined = backendError?.lockoutEndTime;
 
     this.authStateSubject.next({
       ...this.authStateSubject.value,
       error: errorMessage,
-      isLoading: false
+      isLoading: false,
+      remainingAttempts,
+      lockoutEndTime
     });
   }
 

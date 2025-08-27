@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-connexion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="auth-container fade-in">
       <div class="auth-card">
@@ -67,7 +68,7 @@ import { FormsModule } from '@angular/forms';
               <span class="checkmark"></span>
               Se souvenir de moi
             </label>
-            <a href="#" class="link-secondary">Mot de passe oublié ?</a>
+            <a routerLink="/forgot-password" class="link-secondary">Mot de passe oublié ?</a>
           </div>
 
           <button type="submit" class="btn btn-primary btn-full" [disabled]="loginForm.invalid || isLoading">
@@ -77,7 +78,7 @@ import { FormsModule } from '@angular/forms';
         </form>
 
         <div class="auth-footer">
-          <p>Pas encore de compte ? <a href="#" class="link-primary">S'inscrire</a></p>
+          <p>Pas encore de compte ? <a routerLink="/register" class="link-primary">S'inscrire</a></p>
         </div>
       </div>
 
