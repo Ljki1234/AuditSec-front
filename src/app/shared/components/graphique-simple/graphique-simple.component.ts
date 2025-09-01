@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface DonneeGraphique {
@@ -269,7 +269,7 @@ interface DonneeGraphique {
     }
   `]
 })
-export class GraphiqueSimpleComponent implements OnInit {
+export class GraphiqueSimpleComponent implements OnInit, OnChanges {
   @Input() titre: string = '';
   @Input() donnees: DonneeGraphique[] = [];
   @Input() type: 'barres' | 'circulaire' | 'ligne' = 'barres';
@@ -286,6 +286,17 @@ export class GraphiqueSimpleComponent implements OnInit {
       this.calculerSegmentsCirculaires();
     } else if (this.type === 'ligne') {
       this.calculerPointsLigne();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['donnees'] && !changes['donnees'].firstChange) {
+      this.calculerStatistiques();
+      if (this.type === 'circulaire') {
+        this.calculerSegmentsCirculaires();
+      } else if (this.type === 'ligne') {
+        this.calculerPointsLigne();
+      }
     }
   }
 

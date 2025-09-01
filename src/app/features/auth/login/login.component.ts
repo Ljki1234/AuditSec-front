@@ -620,6 +620,20 @@ import { LoginRequest } from '../../../core/models/auth.models';
     .remember-checkbox {
       color: #4a5568;
       font-size: 13px;
+      font-weight: 500;
+    }
+
+    .remember-checkbox ::ng-deep .mdc-checkbox {
+      border-color: #cbd5e0;
+    }
+
+    .remember-checkbox ::ng-deep .mdc-checkbox--selected {
+      background-color: #667eea;
+      border-color: #667eea;
+    }
+
+    .remember-checkbox ::ng-deep .mdc-checkbox--selected .mdc-checkbox__ripple {
+      background-color: #667eea;
     }
 
     .forgot-link {
@@ -821,6 +835,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   remainingAttempts?: number;
   lockoutEndTime?: string;
   showRegisterForm = false;
+  hasSavedCredentials = false;
   private destroy$ = new Subject<void>();
   private countdownIntervalId: any;
 
@@ -845,9 +860,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Reset form to ensure empty fields on page reload
-    this.resetForm();
-    
     // Subscribe to auth state changes
     this.authService.authState$
       .pipe(takeUntil(this.destroy$))
@@ -869,7 +881,15 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.router.navigate(['/tableau-de-bord']);
         }
       });
+
+    // Load saved credentials immediately and also after a delay
+    this.loadSavedCredentials();
+    setTimeout(() => {
+      this.loadSavedCredentials();
+    }, 500);
   }
+
+
 
   ngOnDestroy(): void {
     if (this.countdownIntervalId) {
@@ -975,8 +995,12 @@ export class LoginComponent implements OnInit, OnDestroy {
         password: this.loginForm.value.password
       };
 
-      this.authService.login(credentials).subscribe({
+      const rememberMe = this.loginForm.value.rememberMe;
+      console.log('Login attempt with rememberMe:', rememberMe);
+
+      this.authService.login(credentials, rememberMe).subscribe({
         next: (response) => {
+          console.log('Login successful, rememberMe was:', rememberMe);
           this.snackBar.open('Connexion réussie!', 'Fermer', {
             duration: 3000,
             horizontalPosition: 'center',
@@ -990,6 +1014,50 @@ export class LoginComponent implements OnInit, OnDestroy {
       });
     }
   }
+
+  loadSavedCredentials(): void {
+    console.log('Loading saved credentials...');
+    const savedCredentials = this.authService.getRememberMeCredentials();
+    console.log('Saved credentials:', savedCredentials);
+    
+    if (savedCredentials && savedCredentials.email && savedCredentials.password) {
+      console.log('Found saved credentials, filling form...');
+      this.hasSavedCredentials = true;
+      
+      try {
+        // Use setValue instead of patchValue for more reliable form filling
+        this.loginForm.setValue({
+          email: savedCredentials.email,
+          password: savedCredentials.password,
+          rememberMe: true
+        });
+        
+        // Force form validation update
+        this.loginForm.markAsTouched();
+        this.loginForm.updateValueAndValidity();
+        
+        // Trigger change detection
+        setTimeout(() => {
+          this.loginForm.patchValue({
+            email: savedCredentials.email,
+            password: savedCredentials.password,
+            rememberMe: true
+          });
+        }, 100);
+        
+        console.log('Form filled with saved credentials');
+        console.log('Form values after filling:', this.loginForm.value);
+      } catch (error) {
+        console.error('Error filling form:', error);
+      }
+    } else {
+      console.log('No saved credentials found, resetting form');
+      this.hasSavedCredentials = false;
+      this.resetForm();
+    }
+  }
+
+
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;

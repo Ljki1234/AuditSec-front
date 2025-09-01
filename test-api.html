@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Vulnérabilités</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test de l'API des Statistiques de Vulnérabilités</h1>
+    
+    <div class="container">
+        <h2>1. Authentification</h2>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="votre@email.com" value="admin@example.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Mot de passe:</label>
+            <input type="password" id="password" placeholder="votre_mot_de_passe" value="password123">
+        </div>
+        <button onclick="login()">🔑 Se connecter</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Test des Statistiques du Tableau de Bord</h2>
+        <button onclick="testDashboard()">📊 Récupérer les statistiques</button>
+        <div id="dashboardResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Test des Statistiques Complètes</h2>
+        <button onclick="testOverview()">📈 Récupérer l'aperçu complet</button>
+        <div id="overviewResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Test des Statistiques par Site</h2>
+        <div class="form-group">
+            <label for="websiteId">ID du site:</label>
+            <input type="number" id="websiteId" placeholder="1" value="1">
+        </div>
+        <button onclick="testWebsite()">🌐 Récupérer les statistiques du site</button>
+        <div id="websiteResult" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Connexion réussie!\nToken: ${authToken.substring(0, 50)}...`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Échec de la connexion: ${data.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Erreur: ${error.message}`;
+            }
+        }
+
+        async function testDashboard() {
+            if (!authToken) {
+                document.getElementById('dashboardResult').className = 'result error';
+                document.getElementById('dashboardResult').textContent = '❌ Veuillez d\'abord vous connecter';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/vulnerability-statistics/dashboard', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const resultDiv = document.getElementById('dashboardResult');
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Statistiques du tableau de bord:\n${JSON.stringify(data.data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Erreur: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('dashboardResult').className = 'result error';
+                document.getElementById('dashboardResult').textContent = `❌ Erreur: ${error.message}`;
+            }
+        }
+
+        async function testOverview() {
+            if (!authToken) {
+                document.getElementById('overviewResult').className = 'result error';
+                document.getElementById('overviewResult').textContent = '❌ Veuillez d\'abord vous connecter';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/vulnerability-statistics/overview', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const resultDiv = document.getElementById('overviewResult');
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Statistiques complètes:\n${JSON.stringify(data.data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Erreur: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('overviewResult').className = 'result error';
+                document.getElementById('overviewResult').textContent = `❌ Erreur: ${error.message}`;
+            }
+        }
+
+        async function testWebsite() {
+            if (!authToken) {
+                document.getElementById('websiteResult').className = 'result error';
+                document.getElementById('websiteResult').textContent = '❌ Veuillez d\'abord vous connecter';
+                return;
+            }
+
+            const websiteId = document.getElementById('websiteId').value;
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/vulnerability-statistics/website/${websiteId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const resultDiv = document.getElementById('websiteResult');
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Statistiques du site ${websiteId}:\n${JSON.stringify(data.data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Erreur: ${data.message}`;
+                }
+            } catch (error) {
+                document.getElementById('websiteResult').className = 'result error';
+                document.getElementById('websiteResult').textContent = `❌ Erreur: ${error.message}`;
+            }
+        }
+
+        // Instructions d'utilisation
+        console.log(`
+🔧 Instructions de test:
+
+1. Assurez-vous que votre backend Spring Boot est démarré sur le port 8080
+2. Cliquez sur "Se connecter" pour obtenir un token d'authentification
+3. Testez les différents endpoints de l'API
+4. Vérifiez que les données correspondent à celles de votre base de données
+
+Si vous obtenez des erreurs CORS, vérifiez la configuration CORS dans votre backend.
+        `);
+    </script>
+</body>
+</html>

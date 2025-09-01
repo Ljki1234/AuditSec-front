@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Websites Count</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .response {
+            background: #f3e5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #9c27b0;
+        }
+        .test-button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .result {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #ff9800;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de l'API Websites Count</h1>
+        
+        <div class="endpoint">
+            <h3>📡 Endpoint testé :</h3>
+            <code>GET http://localhost:8080/api/websites/websites-count</code>
+        </div>
+
+        <div class="response">
+            <h3>📊 Réponse attendue :</h3>
+            <pre>{
+    "data": {
+        "inactiveWebsites": 0,
+        "activeRate": 100,
+        "totalWebsites": 6,
+        "activeWebsites": 6
+    },
+    "success": true,
+    "message": "Nombre de sites surveillés récupéré avec succès"
+}</pre>
+        </div>
+
+        <div>
+            <h3>🧪 Tests :</h3>
+            <button class="test-button" onclick="testWebsitesCount()">Tester l'endpoint</button>
+            <button class="test-button" onclick="testWithAuth()">Tester avec authentification</button>
+            <button class="test-button" onclick="clearResults()">Effacer les résultats</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function testWebsitesCount() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔄 Test en cours...</div>';
+
+            fetch('http://localhost:8080/api/websites/websites-count', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.json();
+            })
+            .then(data => {
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h4>✅ Succès !</h4>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Données reçues:</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <br>
+                        <strong>Nombre total de sites:</strong> ${data.data?.totalWebsites || 'N/A'}<br>
+                        <strong>Sites actifs:</strong> ${data.data?.activeWebsites || 'N/A'}<br>
+                        <strong>Taux d'activité:</strong> ${data.data?.activeRate || 'N/A'}%
+                    </div>
+                `;
+            })
+            .catch(error => {
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h4>❌ Erreur !</h4>
+                        <strong>Erreur:</strong> ${error.message}<br>
+                        <br>
+                        <strong>Détails:</strong><br>
+                        - Vérifiez que votre backend Spring Boot est démarré sur le port 8080<br>
+                        - Vérifiez que l'endpoint /api/websites/websites-count existe<br>
+                        - Vérifiez les logs du backend pour plus de détails
+                    </div>
+                `;
+            });
+        }
+
+        function testWithAuth() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔄 Test avec authentification en cours...</div>';
+
+            // Simuler un token JWT (à remplacer par un vrai token)
+            const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+            fetch('http://localhost:8080/api/websites/websites-count', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${fakeToken}`
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h4>✅ Test avec authentification réussi !</h4>
+                        <strong>Données reçues:</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h4>❌ Erreur avec authentification !</h4>
+                        <strong>Erreur:</strong> ${error.message}<br>
+                        <br>
+                        <strong>Note:</strong> Cette erreur peut être normale si l'authentification est requise
+                    </div>
+                `;
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test automatique au chargement de la page
+        window.onload = function() {
+            console.log('🚀 Page de test chargée');
+            console.log('📡 Prêt à tester l\'endpoint: http://localhost:8080/api/websites/websites-count');
+        };
+    </script>
+</body>
+</html>
+
+

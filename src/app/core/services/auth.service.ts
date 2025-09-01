@@ -21,6 +21,7 @@ export class AuthService {
   private readonly API_BASE_URL = 'http://localhost:8080/api/auth';
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
+  private readonly REMEMBER_ME_KEY = 'remember_me_credentials';
 
   private authStateSubject = new BehaviorSubject<AuthState>({
     user: null,
@@ -52,12 +53,18 @@ export class AuthService {
   }
 
   // Login
-  login(credentials: LoginRequest): Observable<AuthResponse> {
+  login(credentials: LoginRequest, rememberMe: boolean = false): Observable<AuthResponse> {
     this.setLoading(true);
     
     return this.http.post<AuthResponse>(`${this.API_BASE_URL}/login`, credentials).pipe(
       tap(response => {
         this.handleSuccessfulAuth(response);
+        // Save credentials if remember me is checked
+        if (rememberMe) {
+          this.saveRememberMeCredentials(credentials);
+        } else {
+          this.clearRememberMeCredentials();
+        }
       }),
       catchError(error => {
         this.handleAuthError(error);
@@ -146,6 +153,21 @@ export class AuthService {
   // Logout
   logout(): void {
     this.clearStoredAuth();
+    // Don't clear remember me credentials on logout - keep them for next login
+    // this.clearRememberMeCredentials();
+    this.authStateSubject.next({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null
+    });
+  }
+
+  // Force logout - clears everything including remember me
+  forceLogout(): void {
+    this.clearStoredAuth();
+    this.clearRememberMeCredentials();
     this.authStateSubject.next({
       user: null,
       token: null,
@@ -240,6 +262,47 @@ export class AuthService {
       ...this.authStateSubject.value,
       error: null
     });
+  }
+
+  // Public method to clear errors
+  public clearAuthError(): void {
+    this.clearError();
+  }
+
+  // Remember Me functionality
+  public getRememberMeCredentials(): { email: string; password: string } | null {
+    try {
+      const saved = localStorage.getItem(this.REMEMBER_ME_KEY);
+      console.log('Getting remember me credentials from localStorage:', saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('Parsed credentials:', parsed);
+        return parsed;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting remember me credentials:', error);
+      return null;
+    }
+  }
+
+  public saveRememberMeCredentials(credentials: LoginRequest): void {
+    console.log('Saving remember me credentials:', credentials);
+    localStorage.setItem(this.REMEMBER_ME_KEY, JSON.stringify({
+      email: credentials.email,
+      password: credentials.password
+    }));
+    console.log('Credentials saved to localStorage');
+  }
+
+  public clearRememberMeCredentials(): void {
+    console.log('Clearing remember me credentials');
+    localStorage.removeItem(this.REMEMBER_ME_KEY);
+  }
+
+  // Public method to manually clear remember me credentials
+  public clearRememberMe(): void {
+    this.clearRememberMeCredentials();
   }
 
   private storeAuth(token: string, user: User): void {

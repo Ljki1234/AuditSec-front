@@ -40,7 +40,8 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "development": {
-              "buildTarget": "demo:build:development"
+              "buildTarget": "demo:build:development",
+              "proxyConfig": "proxy.conf.json"
             },
             "production": {
               "buildTarget": "demo:build:production"

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 interface Site {
   id: number;
@@ -29,17 +30,20 @@ interface Site {
       <div class="page-header">
         <div class="header-left">
           <h1>Gestion des Sites</h1>
-          <p>{{ sites.length }} sites surveillés • {{ getSitesActifs() }} actifs</p>
+          <p>{{ summary?.total ?? sites.length }} sites surveillés • {{ summary?.active ?? getSitesActifs() }} actifs</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-secondary" (click)="exporterSites()">
             <span>📁</span>
             Exporter
           </button>
-          <a routerLink="/sites/ajouter" class="btn btn-primary">
-            <span>➕</span>
-            Ajouter un site
-          </a>
+          <div class="quick-audit">
+            <input type="text" class="quick-input" placeholder="Entrer une URL (ex: https://github.com)" [(ngModel)]="urlSaisie">
+            <button class="btn btn-primary" (click)="ajouterEtAuditer()">
+              <span>🔍</span>
+              Auditer
+            </button>
+          </div>
         </div>
       </div>
 
@@ -320,6 +324,17 @@ interface Site {
       display: flex;
       gap: 1rem;
       align-items: center;
+    }
+
+    .quick-audit { display: flex; gap: 0.5rem; }
+    .quick-input {
+      width: 360px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
     }
 
     .filters-section {
@@ -811,85 +826,16 @@ export class ListeSitesComponent implements OnInit {
     direction: 'asc' as 'asc' | 'desc'
   };
 
-  sites: Site[] = [
-    {
-      id: 1,
-      nom: 'Site Corporate',
-      url: 'https://entreprise.exemple.com',
-      statut: 'actif',
-      dernierAudit: '15 Jan 2025',
-      scoreSecurite: 92,
-      vulnerabilites: 0,
-      alertes: 0,
-      certificatSSL: { valide: true, expiration: '15 Juil 2025' },
-      technologies: ['WordPress', 'PHP', 'MySQL', 'SSL']
-    },
-    {
-      id: 2,
-      nom: 'E-commerce',
-      url: 'https://boutique.exemple.com',
-      statut: 'actif',
-      dernierAudit: '14 Jan 2025',
-      scoreSecurite: 67,
-      vulnerabilites: 5,
-      alertes: 2,
-      certificatSSL: { valide: true, expiration: '22 Mai 2025' },
-      technologies: ['Magento', 'PHP', 'Redis', 'SSL']
-    },
-    {
-      id: 3,
-      nom: 'API Services',
-      url: 'https://api.services.com',
-      statut: 'erreur',
-      dernierAudit: '10 Jan 2025',
-      scoreSecurite: 34,
-      vulnerabilites: 12,
-      alertes: 8,
-      certificatSSL: { valide: false, expiration: '02 Jan 2025' },
-      technologies: ['Node.js', 'Express', 'MongoDB']
-    },
-    {
-      id: 4,
-      nom: 'Blog',
-      url: 'https://blog.exemple.com',
-      statut: 'actif',
-      dernierAudit: '13 Jan 2025',
-      scoreSecurite: 85,
-      vulnerabilites: 1,
-      alertes: 0,
-      certificatSSL: { valide: true, expiration: '30 Sep 2025' },
-      technologies: ['Ghost', 'Node.js', 'SQLite']
-    },
-    {
-      id: 5,
-      nom: 'App Mobile Backend',
-      url: 'https://mobile-api.exemple.com',
-      statut: 'inactif',
-      dernierAudit: '08 Jan 2025',
-      scoreSecurite: 78,
-      vulnerabilites: 2,
-      alertes: 1,
-      certificatSSL: { valide: true, expiration: '12 Août 2025' },
-      technologies: ['Django', 'Python', 'PostgreSQL', 'Docker']
-    },
-    {
-      id: 6,
-      nom: 'Dashboard Admin',
-      url: 'https://admin.exemple.com',
-      statut: 'actif',
-      dernierAudit: '15 Jan 2025',
-      scoreSecurite: 96,
-      vulnerabilites: 0,
-      alertes: 0,
-      certificatSSL: { valide: true, expiration: '15 Nov 2025' },
-      technologies: ['Angular', 'TypeScript', 'Firebase']
-    }
-  ];
-
+  summary: { total?: number; active?: number } | null = null;
+  urlSaisie = '';
+  sites: Site[] = [];
   sitesFiltres: Site[] = [];
 
+  constructor(private http: HttpClient) {}
+
   ngOnInit() {
-    this.sitesFiltres = [...this.sites];
+    this.chargerSummary();
+    this.chargerListe();
   }
 
   trackBySiteId(index: number, site: Site): number {
@@ -981,7 +927,18 @@ export class ListeSitesComponent implements OnInit {
   }
 
   lancerAudit(site: Site) {
-    console.log('Démonstration: Lancer audit pour', site.nom);
+    this.http.get(`/api/audits/launch/${site.id}`).subscribe({
+      next: (auditResult: any) => {
+        const vulns = auditResult?.vulnerabilitiesCount || 0;
+        const alerts = auditResult?.alertsCount || 0;
+        alert(`Audit terminé!\nVulnérabilités détectées: ${vulns}\nAlertes non lues: ${alerts}`);
+        this.chargerListe();
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error || "Erreur lors du lancement de l'audit";
+        alert(msg);
+      }
+    });
   }
 
   editerSite(site: Site) {
@@ -989,12 +946,176 @@ export class ListeSitesComponent implements OnInit {
   }
 
   supprimerSite(site: Site) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le site "${site.nom}" ?`)) {
-      console.log('Démonstration: Supprimer site', site.nom);
+    const message = `🗑️ Êtes-vous sûr de vouloir supprimer le site "${site.nom}" ?\n\n⚠️ ATTENTION : Cette action supprimera définitivement :\n• Le site web\n• Tous les audits associés\n• Tous les résultats d'audit\n• Toutes les vulnérabilités détectées\n• Toutes les notifications liées\n\nCette action est irréversible !`;
+    
+    if (confirm(message)) {
+      // Afficher un indicateur de chargement
+      const originalText = '🗑️';
+      const deleteButton = event?.target as HTMLElement;
+      if (deleteButton) {
+        deleteButton.innerHTML = '⏳';
+        deleteButton.setAttribute('disabled', 'true');
+      }
+      
+      this.http.delete(`/api/websites/${site.id}`).subscribe({
+        next: () => {
+          // Supprimer le site de la liste locale
+          this.sites = this.sites.filter(s => s.id !== site.id);
+          this.appliquerFiltres();
+          
+          // Message de succès détaillé
+          const successMsg = `✅ Site "${site.nom}" supprimé avec succès !\n\n🗑️ Supprimé en cascade :\n• Site web\n• ${site.vulnerabilites} vulnérabilités\n• ${site.alertes} notifications\n• Tous les audits associés`;
+          alert(successMsg);
+          
+          // Rafraîchir les données depuis le backend
+          this.chargerSummary();
+          this.chargerListe();
+        },
+        error: (err) => {
+          const msg = err?.error?.error || err?.error || "Erreur lors de la suppression du site";
+          alert(`❌ Erreur de suppression : ${msg}`);
+        },
+        complete: () => {
+          // Restaurer le bouton
+          if (deleteButton) {
+            deleteButton.innerHTML = originalText;
+            deleteButton.removeAttribute('disabled');
+          }
+        }
+      });
     }
   }
 
   exporterSites() {
-    console.log('Démonstration: Exporter la liste des sites');
+    let params = new HttpParams();
+    if (this.filtres.recherche) params = params.set('q', this.filtres.recherche);
+    if (this.filtres.statut) params = params.set('status', this.mapStatutLabel(this.filtres.statut));
+    if (this.filtres.scoreMin) params = params.set('minScore', this.filtres.scoreMin);
+    this.http.get(`/api/websites/export`, { params, responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'websites.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error || "Erreur lors de l'export CSV";
+        alert(msg);
+      }
+    });
+  }
+
+  ajouterEtAuditer() {
+    const url = (this.urlSaisie || '').trim();
+    if (!url) { alert('Veuillez entrer une URL'); return; }
+    const body: any = { url, name: this.extraireNom(url) };
+    this.http.post<any>('/api/websites', body).subscribe({
+      next: (created) => {
+        const siteId = created?.id;
+        if (!siteId) { this.chargerSummary(); this.chargerListe(); return; }
+        this.http.get(`/api/audits/launch/${siteId}`).subscribe({
+          next: (auditResult: any) => {
+            const vulns = auditResult?.vulnerabilitiesCount || 0;
+            const alerts = auditResult?.alertsCount || 0;
+            alert(`Site créé et audité!\nVulnérabilités détectées: ${vulns}\nAlertes non lues: ${alerts}`);
+            this.urlSaisie = '';
+            this.chargerSummary();
+            this.chargerListe();
+          },
+          error: (err) => {
+            const msg = err?.error?.error || err?.error || "Erreur lors du lancement de l'audit";
+            alert(msg);
+            this.chargerSummary();
+            this.chargerListe();
+          }
+        });
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error || "Impossible d'ajouter le site";
+        alert(msg);
+      }
+    });
+  }
+
+  private chargerSummary() {
+    this.http.get<any>('/api/websites/summary').subscribe({
+      next: (s) => this.summary = s,
+      error: () => this.summary = null
+    });
+  }
+
+  private chargerListe() {
+    let params = new HttpParams().set('page', '0').set('size', '50');
+    if (this.filtres.recherche) params = params.set('q', this.filtres.recherche);
+    if (this.filtres.statut) params = params.set('status', this.mapStatutLabel(this.filtres.statut));
+    if (this.filtres.scoreMin) params = params.set('minScore', this.filtres.scoreMin);
+
+    this.http.get<any>('/api/websites/list', { params }).subscribe({
+      next: (page) => {
+        const items = (page?.content ?? []) as any[];
+        this.sites = items.map(it => this.mapItemToViewModel(it));
+        this.appliquerFiltres();
+      },
+      error: () => {
+        this.sites = [];
+        this.sitesFiltres = [];
+      }
+    });
+  }
+
+  private mapItemToViewModel(item: any): Site {
+    const statut = this.mapStatusFromApi(item.status);
+    return {
+      id: item.id,
+      nom: item.name ?? item.url,
+      url: item.url,
+      statut,
+      dernierAudit: item.lastAuditAt ? this.formatDate(item.lastAuditAt) : '-',
+      scoreSecurite: item.securityScore ?? 0,
+      vulnerabilites: item.vulnerabilitiesCount ?? 0,
+      alertes: item.alertsCount ?? 0,
+      certificatSSL: { valide: !!item.sslValid, expiration: '-' },
+      technologies: item.techStack ?? []
+    };
+  }
+
+  private mapStatusFromApi(status?: string): 'actif' | 'inactif' | 'erreur' {
+    const s = (status || '').toLowerCase();
+    if (s === 'actif') return 'actif';
+    if (s === 'inactif') return 'inactif';
+    if (s === 'erreur') return 'erreur';
+    // tolère EN/legacy
+    if (s === 'active') return 'actif';
+    if (s === 'inactive') return 'inactif';
+    if (s === 'error') return 'erreur';
+    return 'actif';
+  }
+
+  private mapStatutLabel(statut?: string): string {
+    if (!statut) return '';
+    if (statut === 'actif') return 'Actif';
+    if (statut === 'inactif') return 'Inactif';
+    if (statut === 'erreur') return 'Erreur';
+    return '';
+  }
+
+  private formatDate(iso: string): string {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return iso;
+    }
+  }
+
+  private extraireNom(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.hostname;
+    } catch {
+      return url;
+    }
   }
 }

@@ -36,26 +36,157 @@ import { AuthService } from '../../../core/services/auth.service';
             <div class="logo-icon">🔐</div>
             <h1>AuditSec</h1>
           </div>
-          <p class="auth-subtitle">Mot de passe oublié</p>
+          <p class="auth-subtitle">{{ showRegisterForm ? 'Créez votre compte' : 'Mot de passe oublié' }}</p>
         </div>
 
-        <!-- Progress Steps -->
-        <div class="progress-steps">
-          <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
-            <div class="step-number">1</div>
-            <span class="step-label">Email</span>
+        <!-- Register Form -->
+        <form *ngIf="showRegisterForm" [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form">
+          <!-- Username Field -->
+          <div class="input-group">
+            <div class="input-icon">
+              <mat-icon>person</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="form-field">
+              <input
+                matInput
+                type="text"
+                formControlName="username"
+                placeholder="Nom d'utilisateur"
+                autocomplete="off">
+              <mat-error *ngIf="registerForm.get('username')?.hasError('required')">
+                Le nom d'utilisateur est requis
+              </mat-error>
+              <mat-error *ngIf="registerForm.get('username')?.hasError('minlength')">
+                Le nom d'utilisateur doit contenir au moins 3 caractères
+              </mat-error>
+            </mat-form-field>
           </div>
-          <div class="step-line" [class.completed]="currentStep > 1"></div>
-          <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
-            <div class="step-number">2</div>
-            <span class="step-label">Code</span>
+
+          <!-- Email Field -->
+          <div class="input-group">
+            <div class="input-icon">
+              <mat-icon>email</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="form-field">
+              <input
+                matInput
+                type="email"
+                formControlName="email"
+                placeholder="Votre adresse email"
+                autocomplete="off">
+              <mat-error *ngIf="registerForm.get('email')?.hasError('required')">
+                L'email est requis
+              </mat-error>
+              <mat-error *ngIf="registerForm.get('email')?.hasError('email')">
+                Format d'email invalide
+              </mat-error>
+            </mat-form-field>
           </div>
-          <div class="step-line" [class.completed]="currentStep > 2"></div>
-          <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
-            <div class="step-number">3</div>
-            <span class="step-label">Nouveau mot de passe</span>
+
+          <!-- Password Field -->
+          <div class="input-group">
+            <div class="input-icon">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="form-field">
+              <input
+                matInput
+                [type]="showRegisterPassword ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Mot de passe (min. 16 caractères)"
+                autocomplete="off">
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="toggleRegisterPassword()"
+                class="visibility-toggle"
+                [attr.aria-label]="showRegisterPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+                <svg *ngIf="!showRegisterPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="custom-icon">
+                  <path d="M73 39.1C63.6 29.7 48.4 29.7 39.1 39.1C29.8 48.5 29.7 63.7 39 73.1L567 601.1C576.4 610.5 591.6 610.5 600.9 601.1C610.2 591.7 610.3 576.5 600.9 567.2L504.5 470.8C507.2 468.4 509.9 466 512.5 463.6C559.3 420.1 590.6 368.2 605.5 332.5C608.8 324.6 608.8 315.8 605.5 307.9C590.6 272.2 559.3 220.2 512.5 176.8C465.4 133.1 400.7 96.2 319.9 96.2C263.1 96.2 214.3 114.4 173.9 140.4L73 39.1zM236.5 202.7C260 185.9 288.9 176 320 176C399.5 176 464 240.5 464 320C464 351.1 454.1 379.9 437.3 403.5L402.6 368.8C415.3 347.4 419.6 321.1 412.7 295.1C399 243.9 346.3 213.5 295.1 227.2C286.5 229.5 278.4 232.9 271.1 237.2L236.4 202.5zM357.3 459.1C345.4 462.3 332.9 464 320 464C240.5 464 176 399.5 176 320C176 307.1 177.7 294.6 180.9 282.7L101.4 203.2C68.8 240 46.4 279 34.5 307.7C31.2 315.6 31.2 324.4 34.5 332.3C49.4 368 80.7 420 127.5 463.4C174.6 507.1 239.3 544 320.1 544C357.4 544 391.3 536.1 421.6 523.4L357.4 459.2z"/>
+                </svg>
+                <svg *ngIf="showRegisterPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="custom-icon">
+                  <path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z"/>
+                </svg>
+              </button>
+              <mat-error *ngIf="registerForm.get('password')?.hasError('required')">
+                Le mot de passe est requis
+              </mat-error>
+              <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">
+                Le mot de passe doit contenir au moins 16 caractères
+              </mat-error>
+            </mat-form-field>
           </div>
-        </div>
+
+          <!-- Confirm Password Field -->
+          <div class="input-group">
+            <div class="input-icon">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <mat-form-field appearance="outline" class="form-field">
+              <input
+                matInput
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                placeholder="Confirmer le mot de passe"
+                autocomplete="off">
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="toggleConfirmPassword()"
+                class="visibility-toggle"
+                [attr.aria-label]="showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+                <svg *ngIf="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="custom-icon">
+                  <path d="M73 39.1C63.6 29.7 48.4 29.7 39.1 39.1C29.8 48.5 29.7 63.7 39 73.1L567 601.1C576.4 610.5 591.6 610.5 600.9 601.1C610.2 591.7 610.3 576.5 600.9 567.2L504.5 470.8C507.2 468.4 509.9 466 512.5 463.6C559.3 420.1 590.6 368.2 605.5 332.5C608.8 324.6 608.8 315.8 605.5 307.9C590.6 272.2 559.3 220.2 512.5 176.8C465.4 133.1 400.7 96.2 319.9 96.2C263.1 96.2 214.3 114.4 173.9 140.4L73 39.1zM236.5 202.7C260 185.9 288.9 176 320 176C399.5 176 464 240.5 464 320C464 351.1 454.1 379.9 437.3 403.5L402.6 368.8C415.3 347.4 419.6 321.1 412.7 295.1C399 243.9 346.3 213.5 295.1 227.2C286.5 229.5 278.4 232.9 271.1 237.2L236.4 202.5zM357.3 459.1C345.4 462.3 332.9 464 320 464C240.5 464 176 399.5 176 320C176 307.1 177.7 294.6 180.9 282.7L101.4 203.2C68.8 240 46.4 279 34.5 307.7C31.2 315.6 31.2 324.4 34.5 332.3C49.4 368 80.7 420 127.5 463.4C174.6 507.1 239.3 544 320.1 544C357.4 544 391.3 536.1 421.6 523.4L357.4 459.2z"/>
+                </svg>
+                <svg *ngIf="showConfirmPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="custom-icon">
+                  <path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z"/>
+                </svg>
+              </button>
+              <mat-error *ngIf="registerForm.get('confirmPassword')?.hasError('required')">
+                La confirmation du mot de passe est requise
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Password Mismatch Error -->
+          <div *ngIf="registerForm.hasError('passwordMismatch')" class="error-message">
+            <mat-icon>error</mat-icon>
+            <span>Les mots de passe ne correspondent pas</span>
+          </div>
+
+          <!-- Register Button -->
+          <button
+            mat-raised-button
+            type="submit"
+            class="login-button"
+            [disabled]="registerForm.invalid || isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
+            <span *ngIf="!isLoading">S'inscrire</span>
+            <span *ngIf="isLoading">Inscription...</span>
+          </button>
+        </form>
+
+        <!-- Forgot Password Flow (only show when not in register mode) -->
+        <div *ngIf="!showRegisterForm">
+          <!-- Progress Steps -->
+          <div class="progress-steps">
+            <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+              <div class="step-number">1</div>
+              <span class="step-label">Email</span>
+            </div>
+            <div class="step-line" [class.completed]="currentStep > 1"></div>
+            <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+              <div class="step-number">2</div>
+              <span class="step-label">Code</span>
+            </div>
+            <div class="step-line" [class.completed]="currentStep > 2"></div>
+            <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
+              <div class="step-number">3</div>
+              <span class="step-label">Nouveau mot de passe</span>
+            </div>
+          </div>
 
         <!-- Error Banner -->
         <div *ngIf="errorMessage" class="error-banner">
@@ -76,10 +207,10 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-icon>email</mat-icon>
             </div>
             <mat-form-field appearance="outline" class="form-field">
-            <input 
-              matInput 
-              type="email" 
-              formControlName="email" 
+            <input
+              matInput
+              type="email"
+              formControlName="email"
                 placeholder="Votre adresse email"
               autocomplete="email">
               <mat-error *ngIf="emailForm.get('email')?.hasError('required')">
@@ -98,6 +229,7 @@ import { AuthService } from '../../../core/services/auth.service';
             [disabled]="emailForm.invalid || isLoading">
             <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
             <span *ngIf="!isLoading">Envoyer le code</span>
+            <span *ngIf="isLoading">Envoi en cours...</span>
           </button>
         </form>
 
@@ -138,6 +270,7 @@ import { AuthService } from '../../../core/services/auth.service';
             [disabled]="codeForm.invalid || isLoading">
             <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
             <span *ngIf="!isLoading">Vérifier le code</span>
+            <span *ngIf="isLoading">Vérification...</span>
           </button>
 
                      <button
@@ -148,6 +281,7 @@ import { AuthService } from '../../../core/services/auth.service';
              class="resend-code-button">
              <mat-spinner *ngIf="isResending" diameter="16" class="spinner" color="accent"></mat-spinner>
              <span *ngIf="!isResending">Renvoyer le code</span>
+             <span *ngIf="isResending">Envoi en cours...</span>
            </button>
         </form>
 
@@ -202,7 +336,7 @@ import { AuthService } from '../../../core/services/auth.service';
                 matInput
                 [type]="showConfirmPassword ? 'text' : 'password'"
                 formControlName="confirmPassword"
-                placeholder="Confirmer le nouveau mot de passe"
+                placeholder="Confirmer le mot de passe"
                 autocomplete="new-password">
               <button
                 mat-icon-button
@@ -227,19 +361,19 @@ import { AuthService } from '../../../core/services/auth.service';
             </mat-form-field>
           </div>
 
-          <button 
-            mat-raised-button 
+          <button
+            mat-raised-button
             type="submit"
             class="login-button"
             [disabled]="passwordForm.invalid || isLoading">
             <mat-spinner *ngIf="isLoading" diameter="20" class="spinner" color="accent"></mat-spinner>
             <span *ngIf="!isLoading">Réinitialiser le mot de passe</span>
+            <span *ngIf="isLoading">Réinitialisation...</span>
           </button>
         </form>
 
         <!-- Success Message -->
         <div *ngIf="currentStep === 4" class="success-banner">
-          <mat-icon>check_circle</mat-icon>
           <div class="success-content">
             <span class="success-title">Mot de passe réinitialisé avec succès !</span>
             <span class="success-message">
@@ -248,39 +382,43 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
         </div>
 
+        <!-- Divider -->
+        <div *ngIf="!showRegisterForm" class="divider">
+          <span></span>
+        </div>
+
         <!-- Action Buttons -->
         <div class="auth-actions">
-          <button 
-            *ngIf="currentStep < 4"
-            mat-button 
+          <button
+            *ngIf="!showRegisterForm && currentStep < 4"
+            mat-button
             routerLink="/login"
             class="back-button">
+            <mat-icon></mat-icon>
             Retour à la connexion
           </button>
-          
-          <button 
-            *ngIf="currentStep === 4"
-            mat-raised-button 
+
+          <button
+            *ngIf="!showRegisterForm && currentStep === 4"
+            mat-raised-button
             color="primary"
             routerLink="/login"
             class="login-button">
-            <mat-icon>login</mat-icon>
             Aller à la connexion
           </button>
         </div>
 
         <!-- Footer -->
         <div class="auth-footer">
-          <p>Pas encore de compte ? 
-            <a routerLink="/register" class="link-primary">S'inscrire</a>
+          <p *ngIf="!showRegisterForm">Pas encore de compte ?
+            <a (click)="toggleRegisterForm()" class="link-primary" style="cursor: pointer;">S'inscrire</a>
+          </p>
+          <p *ngIf="showRegisterForm">Déjà un compte ?
+            <a (click)="toggleRegisterForm()" class="link-primary" style="cursor: pointer;">Se connecter</a>
           </p>
         </div>
 
         <!-- Security Notice -->
-        <div class="security-notice">
-          <mat-icon>security</mat-icon>
-          <span>Le code expire dans 10 minutes</span>
-        </div>
       </div>
     </div>
   `,
@@ -803,6 +941,22 @@ import { AuthService } from '../../../core/services/auth.service';
       transform: none;
     }
 
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1.5rem 0;
+      color: #a0aec0;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .divider span {
+      flex-grow: 1;
+      height: 1px;
+      background-color: #e2e8f0;
+    }
+
     /* Visibility toggle button */
     .visibility-toggle {
       color: #a0aec0;
@@ -822,6 +976,32 @@ import { AuthService } from '../../../core/services/auth.service';
     /* Spinner */
     .spinner {
       margin-right: 0.5rem;
+      color: #ffffff !important;
+    }
+
+    /* Make spinners more visible */
+    .mat-spinner {
+      display: inline-block !important;
+    }
+
+    /* Button loading state */
+    .login-button:disabled,
+    .resend-code-button:disabled {
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
+
+    /* Spinner colors */
+    .login-button .spinner {
+      color: #ffffff !important;
+    }
+
+    .resend-code-button .spinner {
+      color: #667eea !important;
+    }
+
+    .resend-code-button:disabled .spinner {
+      color: #a0aec0 !important;
     }
 
     /* Dark theme support */
@@ -947,14 +1127,17 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   emailForm: FormGroup;
   codeForm: FormGroup;
   passwordForm: FormGroup;
+  registerForm: FormGroup; // Added for register form
 
   currentStep = 1;
   userEmail = '';
   showPassword = false;
   showConfirmPassword = false;
+  showRegisterPassword = false; // Added for register form
   isLoading = false;
   isResending = false;
   errorMessage = '';
+  showRegisterForm = false; // Added for register form
 
   private destroy$ = new Subject<void>();
 
@@ -982,15 +1165,31 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
       ]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
+
+    this.registerForm = this.fb.group({
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(16)]],
+      confirmPassword: ['', [Validators.required]]
+    }, { validators: this.registerPasswordMatchValidator });
   }
 
   ngOnInit(): void {
+    // Clear any existing error messages when component loads
+    this.errorMessage = '';
+    this.authService.clearAuthError(); // Clear any previous auth errors
+
     // Subscribe to auth state changes
     this.authService.authState$
       .pipe(takeUntil(this.destroy$))
       .subscribe(state => {
         this.isLoading = state.isLoading;
-        this.errorMessage = state.error || '';
+        // Only show error if it's not from a previous login attempt
+        if (state.error && !state.error.includes('Invalid credentials') && !state.error.includes('Mot de passe incorrect')) {
+          this.errorMessage = state.error;
+        } else {
+          this.errorMessage = '';
+        }
       });
   }
 
@@ -1001,11 +1200,13 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
 
   onEmailSubmit(): void {
     if (this.emailForm.valid && !this.isLoading) {
+      console.log('Sending email...');
       const email = this.emailForm.value.email;
       this.userEmail = email;
 
       this.authService.forgotPassword(email).subscribe({
         next: () => {
+          console.log('Email sent successfully');
           this.snackBar.open('Code envoyé par email!', 'Fermer', {
             duration: 3000,
             horizontalPosition: 'center',
@@ -1082,11 +1283,13 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   }
 
   resendCode(): void {
-    if (!this.isResending) {
+    if (!this.isResending && this.userEmail) {
+      console.log('Resending code...');
       this.isResending = true;
 
       this.authService.forgotPassword(this.userEmail).subscribe({
         next: () => {
+          console.log('Code resent successfully');
           this.isResending = false;
           this.snackBar.open('Nouveau code envoyé!', 'Fermer', {
             duration: 3000,
@@ -1095,14 +1298,28 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
           });
         },
         error: (error: any) => {
-          this.isResending = false;
           console.error('Resend code error:', error);
-          this.snackBar.open('Erreur lors de l\'envoi du code', 'Fermer', {
+          this.isResending = false;
+          let errorMessage = 'Erreur lors de l\'envoi du code';
+
+          if (error.status === 404) {
+            errorMessage = 'Email non trouvé dans notre système';
+          } else if (error.status === 429) {
+            errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard';
+          }
+
+          this.snackBar.open(errorMessage, 'Fermer', {
             duration: 3000,
             horizontalPosition: 'center',
             verticalPosition: 'top'
           });
         }
+      });
+    } else if (!this.userEmail) {
+      this.snackBar.open('Erreur: Email non disponible', 'Fermer', {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'top'
       });
     }
   }
@@ -1123,5 +1340,82 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
     if (!password || !confirmPassword) return null;
 
     return password.value === confirmPassword.value ? null : { passwordMismatch: true };
+  }
+
+  // Password match validator for register form
+  private registerPasswordMatchValidator(group: any): {[key: string]: any} | null {
+    const password = group.get('password');
+    const confirmPassword = group.get('confirmPassword');
+
+    if (!password || !confirmPassword) return null;
+
+    return password.value === confirmPassword.value ? null : { passwordMismatch: true };
+  }
+
+  toggleRegisterForm(): void {
+    this.showRegisterForm = !this.showRegisterForm;
+    this.currentStep = 1; // Reset step when toggling forms
+    this.errorMessage = '';
+    this.userEmail = '';
+  }
+
+  toggleRegisterPassword(): void {
+    this.showRegisterPassword = !this.showRegisterPassword;
+  }
+
+  onRegisterSubmit(): void {
+    if (this.registerForm.valid && !this.isLoading) {
+      const userData = {
+        username: this.registerForm.value.username,
+        email: this.registerForm.value.email,
+        password: this.registerForm.value.password
+      };
+
+      this.authService.register(userData).subscribe({
+        next: (response) => {
+          // Registration successful
+          console.log('Registration successful:', response);
+          this.snackBar.open('Inscription réussie!', 'Fermer', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-success']
+          });
+          this.showRegisterForm = false;
+          this.resetRegisterForm();
+          this.errorMessage = ''; // Clear any error messages
+        },
+        error: (error) => {
+          // Ignore 200 responses that are treated as errors
+          if (error.status === 200) {
+            console.log('Registration successful (treated as error):', error);
+            this.snackBar.open('Inscription réussie!', 'Fermer', {
+              duration: 3000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: ['snackbar-success']
+            });
+            this.showRegisterForm = false;
+            this.resetRegisterForm();
+            this.errorMessage = '';
+          } else {
+            console.error('Register error:', error);
+            this.errorMessage = error.error || 'Erreur lors de l\'inscription';
+          }
+        }
+      });
+    }
+  }
+
+  resetRegisterForm(): void {
+    this.registerForm.reset({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
+    this.showRegisterPassword = false;
+    this.showConfirmPassword = false;
+    this.errorMessage = '';
   }
 }
