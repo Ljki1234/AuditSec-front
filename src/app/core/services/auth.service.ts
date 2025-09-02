@@ -18,7 +18,7 @@ import {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_BASE_URL = 'http://localhost:8080/api/auth';
+  private readonly API_BASE_URL = '/api/auth';
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
   private readonly REMEMBER_ME_KEY = 'remember_me_credentials';

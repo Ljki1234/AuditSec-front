@@ -71,6 +71,10 @@ export const routes: Routes = [
       // }
     ]
   },
+  {
+    path: 'audits',
+    loadComponent: () => import('./features/audits/audits.component').then(m => m.AuditsComponent)
+  },
   // Catch all route - redirect to login
   {
     path: '**',

@@ -23,7 +23,7 @@ export interface WebsitesCountData {
   providedIn: 'root'
 })
 export class WebsiteService {
-  private readonly API_BASE_URL = 'http://localhost:8080/api/websites';
+  private readonly API_BASE_URL = '/api/websites';
 
   constructor(
     private http: HttpClient,
